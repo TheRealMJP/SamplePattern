@@ -27,10 +27,7 @@ using namespace SampleFramework11;
 class SamplePattern : public App
 {
 
-protected:
-    
-    // Constants    
-    static const UINT SampleRes = 25;
+protected:       
 
     SpriteFont font;
     SpriteFont smallFont;

@@ -34,6 +34,9 @@ const UINT WindowHeight = 800;
 const float WindowWidthF = static_cast<float>(WindowWidth);
 const float WindowHeightF = static_cast<float>(WindowHeight);
 
+// Number of "buckets" for subsample X and Y coordinates in D3D (4-bit precision)
+static const UINT SampleRes = 16;
+
 // Computes a radical inverse with base 2 using crazy bit-twiddling from "Hacker's Delight"
 static float RadicalInverseBase2(UINT bits)
 {
@@ -79,7 +82,7 @@ void SamplePattern::LoadContent()
     ID3D11DeviceContextPtr deviceContext = deviceManager.ImmediateContext();
 
     // Create a font + SpriteRenderer
-    font.Initialize(L"Arial", 18, SpriteFont::Regular, true, device);
+    font.Initialize(L"Consolas", 18, SpriteFont::Regular, true, device);
     smallFont.Initialize(L"Microsoft Sans Serif", 8.5f, SpriteFont::Regular, true, device);
     spriteRenderer.Initialize(device);
 
@@ -351,11 +354,11 @@ void SamplePattern::Render(const Timer& timer)
 			for (UINT x = 0; x < SampleRes; x++)
 			{
 				XMFLOAT4 color;
-				color.x = (x + 0.5f) / SampleRes;
-				color.y = (y + 0.5f) / SampleRes;
+				color.x = float(x) / SampleRes;
+				color.y = float(y) / SampleRes;
 				color.z = 1.0f;
 				color.w = 1.0f;
-				XMMATRIX transform = scale * XMMatrixTranslation(float(x) / SampleRes + quadOffsetX, float(y) / SampleRes + quadOffsetY, 0);
+				XMMATRIX transform = scale * XMMatrixTranslation((x - 0.5f) / SampleRes + quadOffsetX, (y - 0.5f) / SampleRes + quadOffsetY, 0);
 				spriteRenderer.Render(whiteTexture, transform, color);
 			}
 		}
@@ -447,11 +450,35 @@ void SamplePattern::RenderHUD()
 		transform._42 += 20.0f;
 	}
 
+	const wstring samplePosStrings[16] =
+	{
+		L"-0.5 (-8 / 16)",
+		L"-0.4375 (-7 / 16)",
+		L"-0.375 (-6 / 16)",
+		L"-0.3125 (-5 / 16)",
+		L"-0.25 (-4 / 16)",
+		L"-0.1875 (-3 / 16)",
+		L"-0.125 (-2 / 16)",
+		L"-0.0625 (-1 / 16)",
+		L"0.0 (0 / 16)",
+		L"0.0625 (1 / 16)",
+		L"0.125 (2 / 16)",
+		L"0.1875 (3 / 16)",
+		L"0.25 (4 / 16)",
+		L"0.3125 (5 / 16)",
+		L"0.375 (6 / 16)",
+		L"0.4375 (7 / 16)",
+	};	
+
     for (UINT i = 0; i < desc.Count; ++i)
     {
-        wstring text = L"Sample ";
-        text += ToString(i) + L": (";
-        text += ToString(pattern[i].x) + L", " + ToString(pattern[i].y) + L")";
+		UINT samplePosX = min(UINT(pattern[i].x * SampleRes + 0.5f), 15);
+		UINT samplePosY = min(UINT(pattern[i].y * SampleRes + 0.5f), 15);
+
+        wstring text = L"Sample " + ToString(i) + L" - ";
+        text += L"X: " + samplePosStrings[samplePosX];
+		text += L" Y: " + samplePosStrings[samplePosY];
+
         spriteRenderer.RenderText(font, text.c_str(), transform);
 
         transform._42 += 20.0f;
@@ -497,7 +524,7 @@ void SamplePattern::RenderHUD()
 		borderTransform = XMMatrixScaling(borderWidth, borderHeight, 1.0f) * XMMatrixTranslation(borderTopLeftX, borderTopLeftY, 0);
 		spriteRenderer.Render(whiteTexture, borderTransform, XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f));
 
-		float samplesize = pixelSize * 0.1f;
+		float samplesize = pixelSize / SampleRes;
 		float halfSampleSize = samplesize * 0.5f;
 
 		// Draw the pixel center
@@ -513,11 +540,14 @@ void SamplePattern::RenderHUD()
 		// Draw the sample points
 		for (UINT sample = 0; sample < desc.Count; ++sample)
 		{
-			float samplePosX = pixelDrawX + (pixelSize * quadPatterns[quadPixelIdx][sample].x) - halfSampleSize;
-			float samplePosY = pixelDrawY + (pixelSize * quadPatterns[quadPixelIdx][sample].y) - halfSampleSize;
+			XMFLOAT2 samplePos = quadPatterns[quadPixelIdx][sample];	
+			samplePos.x = std::floor(samplePos.x * SampleRes + 0.5f) / SampleRes;
+			samplePos.y = std::floor(samplePos.y * SampleRes + 0.5f) / SampleRes;
+			float samplePosX = pixelDrawX + (pixelSize * samplePos.x) - halfSampleSize;
+			float samplePosY = pixelDrawY + (pixelSize * samplePos.y) - halfSampleSize;
 			transform = XMMatrixScaling(samplesize, samplesize, 1.0f) * XMMatrixTranslation(samplePosX, samplePosY, 0);
 			spriteRenderer.Render(whiteTexture, transform, XMFLOAT4(0.9f, 0.2f, 0.2f, 0.5f));
-			transform = XMMatrixTranslation(samplePosX + halfSampleSize, samplePosY + halfSampleSize, 0);
+			transform = XMMatrixTranslation(samplePosX + halfSampleSize * 0.5f, samplePosY + halfSampleSize * 0.5f, 0);
 			spriteRenderer.RenderText(smallFont, ToString(sample).c_str(), transform, XMFLOAT4(1, 1, 1, 1));
 		}
 	}
