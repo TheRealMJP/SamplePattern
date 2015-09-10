@@ -23,8 +23,14 @@
 #include "SampleFramework11/Camera.h"
 #include "SampleFramework11/ShaderCompilation.h"
 
+#define UseNVAPI_ (1)
+
+#if UseNVAPI_
+
 #include "NVAPI/nvapi.h"
 #pragma comment(lib, "NVAPI/amd64/nvapi64.lib")
+
+#endif
 
 using namespace SampleFramework11;
 using std::wstring;
@@ -119,6 +125,7 @@ void SamplePattern::LoadContent()
 
     SetupMSAAMode();
 
+#if UseNVAPI_
 	if(NvAPI_Initialize() != NVAPI_OK)
 		return;
 
@@ -164,8 +171,8 @@ void SamplePattern::LoadContent()
 		if(quadrantY)
 			samplePos.y -= 1.0f;
 
-		rsDesc.SamplePositionsX[sampleIdxX + idxOffset] = UINT8(std::floor(samplePos.x * 16.0f + 0.5f));
-		rsDesc.SamplePositionsY[sampleIdxY + idxOffset] = UINT8(std::floor(samplePos.y * 16.0f + 0.5f));
+		rsDesc.SamplePositionsX[sampleIdxX + idxOffset] = UINT8(Clamp(samplePos.x * 16.0f, 0.0f, 15.0f));
+		rsDesc.SamplePositionsY[sampleIdxY + idxOffset] = UINT8(Clamp(samplePos.y * 16.0f, 0.0f, 15.0f));
 	}
 
 	NvAPI_Status status = NvAPI_D3D11_CreateRasterizerState(device, &rsDesc, &msaa2xRState);
@@ -192,8 +199,8 @@ void SamplePattern::LoadContent()
 		if(quadrantY)
 			samplePos.y -= 1.0f;
 
-		rsDesc.SamplePositionsX[sampleIdxX + idxOffset] = UINT8(std::floor(samplePos.x * 16.0f + 0.5f));
-		rsDesc.SamplePositionsY[sampleIdxY + idxOffset] = UINT8(std::floor(samplePos.y * 16.0f + 0.5f));
+        rsDesc.SamplePositionsX[sampleIdxX + idxOffset] = UINT8(Clamp(samplePos.x * 16.0f, 0.0f, 15.0f));
+        rsDesc.SamplePositionsY[sampleIdxY + idxOffset] = UINT8(Clamp(samplePos.y * 16.0f, 0.0f, 15.0f));
 	}
 
 	status = NvAPI_D3D11_CreateRasterizerState(device, &rsDesc, &msaa4xRState);
@@ -220,8 +227,8 @@ void SamplePattern::LoadContent()
 		if(quadrantY)
 			samplePos.y -= 1.0f;
 
-		rsDesc.SamplePositionsX[sampleIdxX + idxOffset] = UINT8(std::floor(samplePos.x * 16.0f + 0.5f));
-		rsDesc.SamplePositionsY[sampleIdxY + idxOffset] = UINT8(std::floor(samplePos.y * 16.0f + 0.5f));
+        rsDesc.SamplePositionsX[sampleIdxX + idxOffset] = UINT8(Clamp(samplePos.x * 16.0f, 0.0f, 15.0f));
+        rsDesc.SamplePositionsY[sampleIdxY + idxOffset] = UINT8(Clamp(samplePos.y * 16.0f, 0.0f, 15.0f));
 	}
 
 	status = NvAPI_D3D11_CreateRasterizerState(device, &rsDesc, &msaa8xRState);
@@ -229,6 +236,7 @@ void SamplePattern::LoadContent()
 		return;
 
 	nvExtensionsAvailable = true;
+#endif // UseNVAPI_
 }
 
 // Sets up ever
@@ -468,7 +476,7 @@ void SamplePattern::RenderHUD()
 		L"0.3125 (5 / 16)",
 		L"0.375 (6 / 16)",
 		L"0.4375 (7 / 16)",
-	};	
+	};
 
     for (UINT i = 0; i < desc.Count; ++i)
     {
@@ -540,7 +548,7 @@ void SamplePattern::RenderHUD()
 		// Draw the sample points
 		for (UINT sample = 0; sample < desc.Count; ++sample)
 		{
-			XMFLOAT2 samplePos = quadPatterns[quadPixelIdx][sample];	
+			XMFLOAT2 samplePos = quadPatterns[quadPixelIdx][sample];
 			samplePos.x = std::floor(samplePos.x * SampleRes + 0.5f) / SampleRes;
 			samplePos.y = std::floor(samplePos.y * SampleRes + 0.5f) / SampleRes;
 			float samplePosX = pixelDrawX + (pixelSize * samplePos.x) - halfSampleSize;
