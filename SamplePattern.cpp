@@ -23,7 +23,7 @@
 #include "SampleFramework11/Camera.h"
 #include "SampleFramework11/ShaderCompilation.h"
 
-#define UseNVAPI_ (1)
+#define UseNVAPI_ (0)
 
 #if UseNVAPI_
 
